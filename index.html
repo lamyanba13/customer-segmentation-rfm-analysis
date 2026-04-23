@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Customer Segmentation RFM Analysis</title>
+  <style>
+    :root {
+      --ink: #17211f;
+      --muted: #63706c;
+      --paper: #f7f2e8;
+      --card: #fffaf0;
+      --pine: #21463f;
+      --clay: #bf6f45;
+      --gold: #d8a23a;
+      --sage: #9fb9a7;
+      --line: rgba(23, 33, 31, 0.14);
+      --shadow: 0 24px 70px rgba(38, 48, 45, 0.15);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: Georgia, "Times New Roman", serif;
+      background:
+        radial-gradient(circle at 15% 10%, rgba(216, 162, 58, 0.24), transparent 30%),
+        radial-gradient(circle at 90% 5%, rgba(159, 185, 167, 0.36), transparent 28%),
+        linear-gradient(135deg, #f9f4ea 0%, #efe7d5 100%);
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .shell {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .hero {
+      position: relative;
+      min-height: 560px;
+      display: grid;
+      align-items: center;
+      overflow: hidden;
+      padding: 56px 0 72px;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 24px;
+      border: 1px solid rgba(33, 70, 63, 0.2);
+      border-radius: 36px;
+      pointer-events: none;
+    }
+
+    .hero-grid {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 32px;
+      align-items: center;
+      z-index: 1;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      gap: 10px;
+      align-items: center;
+      width: fit-content;
+      padding: 9px 14px;
+      border: 1px solid rgba(33, 70, 63, 0.18);
+      border-radius: 999px;
+      color: var(--pine);
+      background: rgba(255, 250, 240, 0.66);
+      font: 700 12px/1.2 Verdana, sans-serif;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      max-width: 830px;
+      margin: 24px 0 18px;
+      font-size: clamp(46px, 8vw, 100px);
+      line-height: 0.9;
+      letter-spacing: -0.07em;
+    }
+
+    .hero p {
+      max-width: 680px;
+      margin: 0;
+      color: var(--muted);
+      font: 20px/1.65 "Trebuchet MS", sans-serif;
+    }
+
+    .hero-card {
+      position: relative;
+      padding: 26px;
+      border-radius: 32px;
+      background: linear-gradient(160deg, rgba(255, 250, 240, 0.9), rgba(244, 230, 199, 0.78));
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255, 255, 255, 0.7);
+    }
+
+    .hero-card img {
+      width: 100%;
+      display: block;
+      border-radius: 22px;
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+
+    .hero-badge {
+      position: absolute;
+      right: 8px;
+      bottom: -22px;
+      width: 154px;
+      height: 154px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #fff9e8;
+      background: var(--clay);
+      text-align: center;
+      font: 700 15px/1.35 Verdana, sans-serif;
+      box-shadow: 0 18px 36px rgba(191, 111, 69, 0.28);
+      transform: rotate(-8deg);
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px;
+      margin-top: -48px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .metric {
+      padding: 22px;
+      border-radius: 24px;
+      background: rgba(255, 250, 240, 0.88);
+      border: 1px solid rgba(33, 70, 63, 0.14);
+      box-shadow: 0 18px 44px rgba(38, 48, 45, 0.09);
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font: 700 11px/1.2 Verdana, sans-serif;
+      letter-spacing: 0.11em;
+      text-transform: uppercase;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 12px;
+      font-size: clamp(26px, 3vw, 38px);
+      line-height: 1;
+    }
+
+    section {
+      padding: 78px 0 0;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: end;
+      margin-bottom: 24px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: clamp(34px, 5vw, 62px);
+      letter-spacing: -0.05em;
+      line-height: 0.95;
+    }
+
+    .section-head p {
+      max-width: 420px;
+      margin: 0;
+      color: var(--muted);
+      font: 17px/1.55 "Trebuchet MS", sans-serif;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .segment-card {
+      padding: 24px;
+      border-radius: 28px;
+      min-height: 210px;
+      background: var(--card);
+      border: 1px solid var(--line);
+      box-shadow: 0 16px 38px rgba(38, 48, 45, 0.08);
+    }
+
+    .segment-card h3 {
+      margin: 0 0 12px;
+      font-size: 27px;
+      letter-spacing: -0.03em;
+    }
+
+    .segment-card p {
+      color: var(--muted);
+      font: 16px/1.55 "Trebuchet MS", sans-serif;
+      margin: 0 0 20px;
+    }
+
+    .pill-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(33, 70, 63, 0.08);
+      color: var(--pine);
+      font: 700 12px/1 Verdana, sans-serif;
+    }
+
+    .charts {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 22px;
+    }
+
+    .chart-card {
+      padding: 18px;
+      border-radius: 28px;
+      background: rgba(255, 250, 240, 0.86);
+      border: 1px solid var(--line);
+      box-shadow: 0 18px 42px rgba(38, 48, 45, 0.09);
+    }
+
+    .chart-card.wide {
+      grid-column: 1 / -1;
+    }
+
+    .chart-card img {
+      width: 100%;
+      display: block;
+      border-radius: 20px;
+      background: #fff;
+      border: 1px solid rgba(23, 33, 31, 0.08);
+    }
+
+    .chart-card h3 {
+      margin: 0 0 14px;
+      font: 700 16px/1.3 Verdana, sans-serif;
+      color: var(--pine);
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border-radius: 28px;
+      border: 1px solid var(--line);
+      background: rgba(255, 250, 240, 0.9);
+      box-shadow: 0 18px 42px rgba(38, 48, 45, 0.09);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+      font-family: "Trebuchet MS", sans-serif;
+    }
+
+    th,
+    td {
+      padding: 16px 18px;
+      text-align: left;
+      border-bottom: 1px solid rgba(23, 33, 31, 0.09);
+    }
+
+    th {
+      color: var(--pine);
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: rgba(159, 185, 167, 0.2);
+    }
+
+    td {
+      color: #2a3431;
+      font-size: 15px;
+    }
+
+    .recommendations {
+      display: grid;
+      grid-template-columns: 0.8fr 1.2fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .callout {
+      position: sticky;
+      top: 24px;
+      padding: 30px;
+      border-radius: 32px;
+      color: #fff9e8;
+      background: linear-gradient(145deg, var(--pine), #102c27);
+      box-shadow: var(--shadow);
+    }
+
+    .callout h3 {
+      margin: 0 0 16px;
+      font-size: 34px;
+      letter-spacing: -0.04em;
+    }
+
+    .callout p {
+      margin: 0;
+      color: rgba(255, 249, 232, 0.78);
+      font: 17px/1.6 "Trebuchet MS", sans-serif;
+    }
+
+    .steps {
+      display: grid;
+      gap: 14px;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 16px;
+      padding: 20px;
+      border-radius: 24px;
+      background: rgba(255, 250, 240, 0.88);
+      border: 1px solid var(--line);
+    }
+
+    .step b {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #fff9e8;
+      background: var(--clay);
+      font-family: Verdana, sans-serif;
+    }
+
+    .step h4 {
+      margin: 0 0 6px;
+      font-size: 20px;
+    }
+
+    .step p {
+      margin: 0;
+      color: var(--muted);
+      font: 15px/1.55 "Trebuchet MS", sans-serif;
+    }
+
+    footer {
+      margin-top: 82px;
+      padding: 34px 0;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+      font: 14px/1.5 "Trebuchet MS", sans-serif;
+    }
+
+    @media (max-width: 920px) {
+      .hero-grid,
+      .recommendations,
+      .charts {
+        grid-template-columns: 1fr;
+      }
+
+      .metrics,
+      .grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .section-head {
+        display: block;
+      }
+
+      .section-head p {
+        margin-top: 14px;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .shell {
+        width: min(100% - 22px, 1180px);
+      }
+
+      .hero {
+        min-height: auto;
+        padding-top: 34px;
+      }
+
+      .hero::before {
+        inset: 10px;
+        border-radius: 24px;
+      }
+
+      .metrics,
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-badge {
+        width: 118px;
+        height: 118px;
+        font-size: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="shell hero-grid">
+      <div>
+        <div class="eyebrow">RFM ecommerce intelligence</div>
+        <h1>Customer segments that turn transactions into strategy.</h1>
+        <p>
+          A portfolio-ready dashboard summarizing customer value, churn risk, and revenue contribution from
+          2023-2024 ecommerce order data.
+        </p>
+      </div>
+      <aside class="hero-card" aria-label="Revenue contribution preview">
+        <img src="visuals/segment_revenue_share.png" alt="Revenue contribution by customer segment" />
+        <div class="hero-badge">807 customers segmented</div>
+      </aside>
+    </div>
+  </header>
+
+  <main class="shell">
+    <div class="metrics" aria-label="Project metrics">
+      <article class="metric">
+        <span>Transactions</span>
+        <strong>3,597</strong>
+      </article>
+      <article class="metric">
+        <span>Customers</span>
+        <strong>807</strong>
+      </article>
+      <article class="metric">
+        <span>Revenue</span>
+        <strong>$531.7K</strong>
+      </article>
+      <article class="metric">
+        <span>Avg. Order</span>
+        <strong>$147.81</strong>
+      </article>
+      <article class="metric">
+        <span>Repeat Rate</span>
+        <strong>86.0%</strong>
+      </article>
+    </div>
+
+    <section>
+      <div class="section-head">
+        <h2>Segment Snapshot</h2>
+        <p>RFM scores classify shoppers by recency, frequency, and monetary value, making each group easy to target with specific lifecycle actions.</p>
+      </div>
+      <div class="grid">
+        <article class="segment-card">
+          <h3>Champions</h3>
+          <p>Recent, frequent, high-value shoppers who should receive VIP treatment and referral pushes.</p>
+          <div class="pill-row"><span class="pill">68 customers</span><span class="pill">$104.0K revenue</span></div>
+        </article>
+        <article class="segment-card">
+          <h3>Loyal Customers</h3>
+          <p>The largest revenue engine, ideal for bundles, subscription offers, and personalized cross-sell campaigns.</p>
+          <div class="pill-row"><span class="pill">182 customers</span><span class="pill">35.5% revenue</span></div>
+        </article>
+        <article class="segment-card">
+          <h3>At Risk</h3>
+          <p>Historically valuable customers whose recency has slipped and should enter win-back journeys.</p>
+          <div class="pill-row"><span class="pill">101 customers</span><span class="pill">$90.8K revenue</span></div>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>Visual Analysis</h2>
+        <p>The charts below are generated from the Python analysis pipeline and stored in the project visuals folder.</p>
+      </div>
+      <div class="charts">
+        <article class="chart-card">
+          <h3>Customer Count by Segment</h3>
+          <img src="visuals/segment_counts.png" alt="Customer count by segment chart" />
+        </article>
+        <article class="chart-card">
+          <h3>Churn Risk by Segment</h3>
+          <img src="visuals/churn_risk_by_segment.png" alt="Churn risk by segment chart" />
+        </article>
+        <article class="chart-card">
+          <h3>Category Revenue</h3>
+          <img src="visuals/category_revenue.png" alt="Revenue by category chart" />
+        </article>
+        <article class="chart-card">
+          <h3>RFM Heatmap</h3>
+          <img src="visuals/rfm_heatmap.png" alt="Average monetary value by R and F scores heatmap" />
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <h2>Revenue Contribution</h2>
+        <p>Loyal Customers and Champions together represent the strongest retention opportunity, while At Risk customers carry meaningful recoverable value.</p>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Segment</th>
+              <th>Customers</th>
+              <th>Revenue</th>
+              <th>Avg. Customer Value</th>
+              <th>Revenue Share</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Loyal Customers</td><td>182</td><td>$188,486.64</td><td>$1,035.64</td><td>35.45%</td></tr>
+            <tr><td>Champions</td><td>68</td><td>$103,997.83</td><td>$1,529.38</td><td>19.56%</td></tr>
+            <tr><td>At Risk</td><td>101</td><td>$90,764.61</td><td>$898.66</td><td>17.07%</td></tr>
+            <tr><td>Hibernating</td><td>250</td><td>$59,118.22</td><td>$236.47</td><td>11.12%</td></tr>
+            <tr><td>Potential Loyalists</td><td>140</td><td>$56,907.57</td><td>$406.48</td><td>10.70%</td></tr>
+            <tr><td>New Customers</td><td>57</td><td>$22,146.63</td><td>$388.54</td><td>4.17%</td></tr>
+            <tr><td>Big Spenders</td><td>9</td><td>$10,246.52</td><td>$1,138.50</td><td>1.93%</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <div class="recommendations">
+        <div class="callout">
+          <h3>Recommended operating plan</h3>
+          <p>Use high-touch retention for valuable active customers, automated nudges for developing segments, and selective low-cost reactivation for dormant groups.</p>
+        </div>
+        <div class="steps">
+          <article class="step">
+            <b>1</b>
+            <div>
+              <h4>Protect the revenue core</h4>
+              <p>Prioritize Champions and Loyal Customers with VIP benefits, early access, and personalized replenishment or bundle offers.</p>
+            </div>
+          </article>
+          <article class="step">
+            <b>2</b>
+            <div>
+              <h4>Recover customers at risk</h4>
+              <p>Trigger win-back journeys for At Risk customers because they represent more than $90K in historical value.</p>
+            </div>
+          </article>
+          <article class="step">
+            <b>3</b>
+            <div>
+              <h4>Grow new value</h4>
+              <p>Move New Customers and Potential Loyalists into repeat purchase behavior with onboarding, category discovery, and time-bound incentives.</p>
+            </div>
+          </article>
+          <article class="step">
+            <b>4</b>
+            <div>
+              <h4>Control reactivation cost</h4>
+              <p>Use low-cost email and owned-channel campaigns for Hibernating customers before investing in expensive paid media.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell">
+      Built with pandas, numpy, matplotlib, seaborn, and Jupyter. Source data and notebooks are included in this repository.
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,13 @@
+Segment,Churn Risk,Customers,Revenue
+At Risk,Medium Risk,101,90764.61
+Big Spenders,Low Risk,5,5504.469999999999
+Big Spenders,Medium Risk,4,4742.049999999999
+Champions,Low Risk,68,103997.83
+Hibernating,Medium Risk,129,35313.07
+Hibernating,High Risk,121,23805.15
+Loyal Customers,Low Risk,181,187528.6
+Loyal Customers,Medium Risk,1,958.04
+New Customers,Low Risk,57,22146.63
+Potential Loyalists,Low Risk,91,30943.56
+Potential Loyalists,Medium Risk,43,22277.3
+Potential Loyalists,High Risk,6,3686.71
